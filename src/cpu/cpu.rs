@@ -346,6 +346,7 @@ impl Cpu {
     pub fn step(&mut self, mem: &mut NesMemory) -> isize {
         let code = self.next(mem);
         let instruction = Instruction::from_code(code);
+        println!("{:?}", instruction.mnemonic);
         match instruction.mnemonic {
             Mnemonic::ADC => {
                 let a = self.reg.a;

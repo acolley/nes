@@ -1,11 +1,13 @@
 pub struct NesMemory {
-    ram: [u8; 0x0800],
+    // ram: [u8; 0x0800],
+    ram: [u8; 0xffff],
 }
 
 impl NesMemory {
     pub fn new() -> NesMemory {
         NesMemory {
-            ram: [0; 0x0800],
+            // ram: [0; 0x0800],
+            ram: [0; 0xffff],
         }
     }
 }
@@ -28,7 +30,7 @@ impl NesMemory {
         //     }
         // }
         let lo = self.ram[addr as usize];
-        let hi = self.ram[addr as usize];
+        let hi = self.ram[(addr + 1) as usize];
         (lo as u16) | ((hi as u16) << 8)
     }
 

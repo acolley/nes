@@ -8,6 +8,11 @@ pub struct Nes {
 
 impl Nes {
     pub fn new(rom: Vec<u8>) -> Nes {
+        let mut memory = NesMemory::new();
+        for (i, x) in rom.iter().enumerate() {
+            memory.write(i as u16, x.clone());
+        }
+
         Nes {
             mem: NesMemory::new(),
             cpu: Cpu::new(),
