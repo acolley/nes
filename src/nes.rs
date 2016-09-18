@@ -1,22 +1,29 @@
 use cpu::Cpu;
-use memory::NesMemory;
+use memory::Memory;
+use rom::Cartridge;
 
 pub struct Nes {
-    mem: NesMemory,
     cpu: Cpu,
+    mem: Memory,
 }
 
 impl Nes {
-    pub fn new(rom: Vec<u8>) -> Nes {
-        let mut memory = NesMemory::new();
-        for (i, x) in rom.iter().enumerate() {
-            memory.write(i as u16, x.clone());
-        }
-
+    pub fn new(cartridge: Cartridge) -> Nes {
+        let mem = Memory::new(cartridge);
+        let mut cpu = Cpu::new();
+        cpu.reset(&mem);
         Nes {
-            mem: NesMemory::new(),
-            cpu: Cpu::new(),
+            cpu: cpu,
+            mem: mem,
         }
+    }
+
+    pub fn cpu(&self) -> &Cpu {
+        &self.cpu
+    }
+
+    pub fn mem(&self) -> &Memory {
+        &self.mem
     }
 
     pub fn step(&mut self) {

@@ -15,7 +15,7 @@ use clap::{Arg, App};
 
 use cpu::Cpu;
 use nes::Nes;
-use rom::Rom;
+use rom::Cartridge;
 
 fn read_file(filename: &str) -> Vec<u8> {
     let mut file = File::open(filename).expect("Could not read file");
@@ -32,8 +32,17 @@ fn main() {
         .get_matches();
 
     let filename = options.value_of("FILENAME").unwrap();
-    let data = read_file(&filename);
-    let rom = Rom::from_bytes(data).expect("Rom format not recognised");
+
+    let cartridge = match Cartridge::from_file(&filename) {
+        Ok(c) => c,
+        Err(e) => panic!("{}", e),
+    };
+
+    let mut nes = Nes::new(cartridge);
+    loop {
+        nes.step();
+    }
+    // let rom = Rom::from_bytes(data).expect("Rom format not recognised");
     // println!("{}", rom.data.len());
     // let mut nes = Nes::new(rom);
     // loop {

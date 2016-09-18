@@ -112,7 +112,7 @@ fn match_cc_10(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b101 => Mnemonic::LDX,
         0b110 => Mnemonic::DEC,
         0b111 => Mnemonic::INC,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0x02),
+        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0b10),
     };
     let address_mode = match (bbb, mnemonic) {
         (0b000, _)             => AddressMode::Immediate,
@@ -124,7 +124,7 @@ fn match_cc_10(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         (0b101, _)             => AddressMode::ZeroPageXIndexed,
         (0b111, Mnemonic::LDX) => AddressMode::AbsoluteYIndexed,
         (0b111, _)             => AddressMode::AbsoluteXIndexed,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0x02),
+        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0b10),
     };
     (mnemonic, address_mode)
 }

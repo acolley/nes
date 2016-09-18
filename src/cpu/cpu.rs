@@ -1,7 +1,7 @@
 //! A 6502 CPU Emulator
 
 use super::instruction::{AddressMode, Instruction, Mnemonic};
-use super::super::memory::{NesMemory};
+use super::super::memory::{Memory};
 
 // pub enum PpuAddr {
 //     Control,
@@ -53,7 +53,7 @@ impl Registers {
     pub fn new() -> Registers {
         Registers {
             pc: 0,
-            sp: 0xff,
+            sp: 0xfd,
             a: 0,
             x: 0,
             y: 0,
@@ -155,37 +155,44 @@ impl Cpu {
         }
     }
 
-    fn next(&mut self, mem: &NesMemory) -> u8 {
+    /// Reset the CPU: http://wiki.nesdev.com/w/index.php/CPU_power_up_state
+    pub fn reset(&mut self, mem: &Memory) {
+        self.reg.pc = mem.read_u16(0xfffc);
+        self.reg.sp = 0xfd;
+        self.flags = Flags::from_byte(0x24);
+    }
+
+    fn next(&mut self, mem: &Memory) -> u8 {
         let x = mem.read(self.reg.pc);
         self.reg.pc += 1;
         x
     }
 
-    fn next_u16(&mut self, mem: &NesMemory) -> u16 {
+    fn next_u16(&mut self, mem: &Memory) -> u16 {
         let lo = self.next(mem);
         let hi = self.next(mem);
         (lo as u16) | ((hi as u16) << 8)
     }
 
-    fn absolute(&mut self, mem: &NesMemory) -> u16 {
+    fn absolute(&mut self, mem: &Memory) -> u16 {
         self.next_u16(mem)
     }
 
-    fn indirect(&mut self, mem: &NesMemory) -> u16 {
+    fn indirect(&mut self, mem: &Memory) -> u16 {
         let base = self.next_u16(mem);
         let lo = mem.read(base);
         let hi = mem.read(base + 1);
         (lo as u16) | ((hi as u16) << 8)
     }
 
-    fn x_indexed_indirect(&self, mem: &NesMemory, base: u8) -> u16 {
+    fn x_indexed_indirect(&self, mem: &Memory, base: u8) -> u16 {
         let indirect = base.wrapping_add(self.reg.x);
         let lo = mem.read(indirect as u16);
         let hi = mem.read(indirect.wrapping_add(1) as u16);
         (lo as u16) | ((hi as u16) << 8)
     }
 
-    fn indirect_indexed(&self, mem: &NesMemory, base: u8) -> u16 {
+    fn indirect_indexed(&self, mem: &Memory, base: u8) -> u16 {
         let lo = mem.read(base as u16);
         let hi = mem.read(base.wrapping_add(1) as u16);
         let addr = ((lo as u16) | ((hi as u16) << 8)).wrapping_add(self.reg.y as u16);
@@ -193,21 +200,21 @@ impl Cpu {
         addr
     }
 
-    fn zero_page_indexed_x(&self, mem: &NesMemory, base: u8) -> u16 {
+    fn zero_page_indexed_x(&self, mem: &Memory, base: u8) -> u16 {
         base.wrapping_add(self.reg.x) as u16
     }
 
-    fn zero_page_indexed_y(&self, mem: &NesMemory, base: u8) -> u16 {
+    fn zero_page_indexed_y(&self, mem: &Memory, base: u8) -> u16 {
         base.wrapping_add(self.reg.y) as u16
     }
 
-    fn indexed_absolute_x(&self, mem: &NesMemory, base: u16) -> u16 {
+    fn indexed_absolute_x(&self, mem: &Memory, base: u16) -> u16 {
         let addr = base.wrapping_add(self.reg.x as u16);
         // (addr, pages_differ(base, addr))
         addr
     }
 
-    fn indexed_absolute_y(&self, mem: &NesMemory, base: u16) -> u16 {
+    fn indexed_absolute_y(&self, mem: &Memory, base: u16) -> u16 {
         let addr = base.wrapping_add(self.reg.y as u16);
         // (addr, pages_differ(base, addr))
         addr
@@ -219,7 +226,7 @@ impl Cpu {
         addr
     }
 
-    fn php(&mut self, mem: &mut NesMemory) {
+    fn php(&mut self, mem: &mut Memory) {
         let sp = self.flags.as_byte();
         self.push(mem, sp);
     }
@@ -229,31 +236,31 @@ impl Cpu {
         self.flags = Flags::from_value_nzc(value);
     }
 
-    fn push(&mut self, mem: &mut NesMemory, x: u8) {
+    fn push(&mut self, mem: &mut Memory, x: u8) {
         mem.write(self.reg.sp, x);
         self.reg.sp -= 1;
     }
 
-    fn push_u16(&mut self, mem: &mut NesMemory, x: u16) {
+    fn push_u16(&mut self, mem: &mut Memory, x: u16) {
         let lo = x as u8;
         let hi = (x >> 8) as u8;
         self.push(mem, hi);
         self.push(mem, lo);
     }
 
-    fn pop(&mut self, mem: &mut NesMemory) -> u8 {
+    fn pop(&mut self, mem: &mut Memory) -> u8 {
         let value = mem.read(self.reg.sp);
         self.reg.sp += 1;
         value
     }
 
-    fn pop_u16(&mut self, mem: &mut NesMemory) -> u16 {
+    fn pop_u16(&mut self, mem: &mut Memory) -> u16 {
         let lo = self.pop(mem);
         let hi = self.pop(mem);
         (lo as u16) | ((hi as u16) << 8)
     }
 
-    fn get_address_and_value(&mut self, mem: &mut NesMemory, address_mode: AddressMode) -> (Option<u16>, u8) {
+    fn get_address_and_value(&mut self, mem: &mut Memory, address_mode: AddressMode) -> (Option<u16>, u8) {
         match address_mode {
             AddressMode::Accumulator => (None, self.reg.a),
             AddressMode::Absolute => {
@@ -310,17 +317,17 @@ impl Cpu {
         }
     }
 
-    fn get_address(&mut self, mem: &mut NesMemory, address_mode: AddressMode) -> u16 {
+    fn get_address(&mut self, mem: &mut Memory, address_mode: AddressMode) -> u16 {
         let (addr, _) = self.get_address_and_value(mem, address_mode);
         addr.expect(format!("No address for mode: {:?}", address_mode).as_str())
     }
 
-    fn get_address_value(&mut self, mem: &mut NesMemory, address_mode: AddressMode) -> u8 {
+    fn get_address_value(&mut self, mem: &mut Memory, address_mode: AddressMode) -> u8 {
         let (_, value) = self.get_address_and_value(mem, address_mode);
         value
     }
 
-    fn with_address_modify<F>(&mut self, mem: &mut NesMemory, address_mode: AddressMode, f: F)
+    fn with_address_modify<F>(&mut self, mem: &mut Memory, address_mode: AddressMode, f: F)
         where F: Fn(u8) -> (u8, Flags) {
         // TODO: also accept a bit mask that determines what flags are to be set
         // based on the result of the given function.
@@ -343,10 +350,20 @@ impl Cpu {
         }
     }
 
-    pub fn step(&mut self, mem: &mut NesMemory) -> isize {
+    pub fn current_instruction(&self, mem: &Memory) -> Instruction {
+        let code = mem.read(self.reg.pc);
+        Instruction::from_code(code)
+    }
+
+    pub fn next_instruction(&mut self, mem: &mut Memory) -> Instruction {
         let code = self.next(mem);
-        let instruction = Instruction::from_code(code);
-        println!("{:?}", instruction.mnemonic);
+        Instruction::from_code(code)
+    }
+
+    pub fn step(&mut self, mem: &mut Memory) -> isize {
+        println!("{}", self.reg.pc);
+        let instruction = self.next_instruction(mem);
+        println!("{:#x} {:?}", instruction.code, instruction.mnemonic);
         match instruction.mnemonic {
             Mnemonic::ADC => {
                 let a = self.reg.a;
@@ -554,7 +571,62 @@ impl Cpu {
                     ((value as u8).rotate_right(1), Flags::from_value_nzc(value))
                 });
             },
-            _ => panic!("Unimplemented instruction: {:#x}", instruction.code),
+            Mnemonic::RTI => {
+                self.flags = Flags::from_byte(self.pop(mem));
+                self.reg.pc = self.pop_u16(mem);
+            },
+            Mnemonic::RTS => {
+                self.reg.pc = self.pop_u16(mem) + 1;
+            },
+            Mnemonic::SBC => {
+                let a = self.reg.a;
+                let c = self.flags.c as u8;
+                self.with_address_modify(mem, instruction.address_mode, |value| {
+                    let new = (a as u16)
+                        .wrapping_sub((value as u16))
+                        .wrapping_sub(c as u16);
+                    (a.wrapping_sub(value).wrapping_sub(c), Flags::from_value_nzcv(new))
+                });
+            },
+            Mnemonic::SEC => {
+                self.flags.c = true;
+            },
+            Mnemonic::SED => {
+                self.flags.d = true;
+            },
+            Mnemonic::SEI => {
+                self.flags.i = true;
+            },
+            Mnemonic::STA => {
+                let addr = self.get_address(mem, instruction.address_mode);
+                mem.write(addr, self.reg.a);
+            },
+            Mnemonic::STX => {
+                let addr = self.get_address(mem, instruction.address_mode);
+                mem.write(addr, self.reg.x);
+            },
+            Mnemonic::STY => {
+                let addr = self.get_address(mem, instruction.address_mode);
+                mem.write(addr, self.reg.y);
+            },
+            Mnemonic::TAX => {
+                self.reg.x = self.reg.a;
+            },
+            Mnemonic::TAY => {
+                self.reg.y = self.reg.a;
+            },
+            Mnemonic::TSX => {
+                self.reg.x = self.reg.sp as u8;
+            },
+            Mnemonic::TXA => {
+                self.reg.a = self.reg.x;
+            },
+            Mnemonic::TXS => {
+                self.reg.sp = self.reg.x as u16;
+            },
+            Mnemonic::TYA => {
+                self.reg.a = self.reg.y;
+            },
         }
         instruction.cycles
     }
