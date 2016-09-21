@@ -1,7 +1,8 @@
 mod command;
 
-use std::io::{stdin, stdout};
+use std::io::{Write, stdin, stdout};
 
+use super::nes::Nes;
 use self::command::Command;
 
 pub struct Debugger {
@@ -17,7 +18,14 @@ impl Debugger {
         }
     }
 
+    fn print_instruction(&mut self) {
+        let instruction = self.nes.current_instruction();
+        println!("{:#x} {:?}", self.nes.cpu().reg.pc, instruction);
+    }
+
     pub fn run(&mut self) {
+        self.print_instruction();
+        print!(">");
         loop {
             stdout().flush().unwrap();
 
@@ -42,11 +50,9 @@ impl Debugger {
     }
 
     pub fn step(&mut self) {
-        let instruction = self.nes.cpu().current_instruction(self.nes.mem());
-
-        println!("{:?}", instruction);
-
         self.nes.step();
+
+        self.print_instruction();
     }
 
     pub fn step_by(&mut self, count: usize) {

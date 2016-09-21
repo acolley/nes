@@ -326,9 +326,9 @@ impl Cpu {
     }
 
     pub fn step(&mut self, mem: &mut Interconnect) -> isize {
-        println!("{}", self.reg.pc);
+//        println!("{}", self.reg.pc);
         let instruction = self.next_instruction(mem);
-        println!("{:#x} {:?}", instruction.code, instruction.mnemonic);
+//        println!("{:#x} {:?}", instruction.code, instruction.mnemonic);
         match instruction.mnemonic {
             Mnemonic::ADC => {
                 let a = self.reg.a;

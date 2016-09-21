@@ -1,4 +1,4 @@
-use cpu::Cpu;
+use cpu::{Cpu, Instruction};
 use interconnect::Interconnect;
 use rom::Cartridge;
 
@@ -22,11 +22,21 @@ impl Nes {
         &self.cpu
     }
 
-    pub fn interconnect(&self) -> &Interconnect {
-        &self.interconnect
+    pub fn interconnect(&mut self) -> &mut Interconnect {
+        &mut self.interconnect
+    }
+
+    pub fn current_instruction(&mut self) -> Instruction {
+        self.cpu.current_instruction(&mut self.interconnect)
     }
 
     pub fn step(&mut self) {
         self.cpu.step(&mut self.interconnect);
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            self.step();
+        }
     }
 }

@@ -1,4 +1,5 @@
 use std::borrow::{Cow};
+use std::str;
 use std::str::{FromStr};
 
 use nom::{IResult, digit, eof, space};
