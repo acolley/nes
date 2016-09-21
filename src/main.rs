@@ -3,8 +3,9 @@ extern crate clap;
 extern crate nom;
 
 mod cpu;
-mod memory;
+mod interconnect;
 mod nes;
+mod ppu;
 mod rom;
 
 use std::fs::File;
@@ -16,13 +17,6 @@ use clap::{Arg, App};
 use cpu::Cpu;
 use nes::Nes;
 use rom::Cartridge;
-
-fn read_file(filename: &str) -> Vec<u8> {
-    let mut file = File::open(filename).expect("Could not read file");
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf).unwrap();
-    buf
-}
 
 fn main() {
     let options = App::new("nes")

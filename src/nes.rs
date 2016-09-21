@@ -1,20 +1,20 @@
 use cpu::Cpu;
-use memory::Memory;
+use interconnect::Interconnect;
 use rom::Cartridge;
 
 pub struct Nes {
     cpu: Cpu,
-    mem: Memory,
+    interconnect: Interconnect,
 }
 
 impl Nes {
     pub fn new(cartridge: Cartridge) -> Nes {
-        let mem = Memory::new(cartridge);
+        let mut interconnect = Interconnect::new(cartridge);
         let mut cpu = Cpu::new();
-        cpu.reset(&mem);
+        cpu.reset(&mut interconnect);
         Nes {
             cpu: cpu,
-            mem: mem,
+            interconnect: interconnect,
         }
     }
 
@@ -22,11 +22,11 @@ impl Nes {
         &self.cpu
     }
 
-    pub fn mem(&self) -> &Memory {
-        &self.mem
+    pub fn interconnect(&self) -> &Interconnect {
+        &self.interconnect
     }
 
     pub fn step(&mut self) {
-        self.cpu.step(&mut self.mem);
+        self.cpu.step(&mut self.interconnect);
     }
 }
