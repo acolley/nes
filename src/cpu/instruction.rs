@@ -61,7 +61,7 @@ fn match_cc_00(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b101 => Mnemonic::LDY,
         0b110 => Mnemonic::CPY,
         0b111 => Mnemonic::CPX,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2)),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2)),
     };
     let address_mode = match bbb {
         0b000 => AddressMode::Immediate,
@@ -69,7 +69,7 @@ fn match_cc_00(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b011 => AddressMode::Absolute,
         0b101 => AddressMode::ZeroPageXIndexed,
         0b111 => AddressMode::AbsoluteXIndexed,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2)),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2)),
     };
     (mnemonic, address_mode)
 }
@@ -85,7 +85,7 @@ fn match_cc_01(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b101 => Mnemonic::LDA,
         0b110 => Mnemonic::CMP,
         0b111 => Mnemonic::SBC,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0x01),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2) | 0x01),
     };
     let address_mode = match bbb {
         0b000 => AddressMode::XIndexedIndirect,
@@ -96,7 +96,7 @@ fn match_cc_01(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b101 => AddressMode::ZeroPageXIndexed,
         0b110 => AddressMode::AbsoluteYIndexed,
         0b111 => AddressMode::AbsoluteXIndexed,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0x01),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2) | 0x01),
     };
     (mnemonic, address_mode)
 }
@@ -112,7 +112,7 @@ fn match_cc_10(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         0b101 => Mnemonic::LDX,
         0b110 => Mnemonic::DEC,
         0b111 => Mnemonic::INC,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0b10),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2) | 0b10),
     };
     let address_mode = match (bbb, mnemonic) {
         (0b000, _)             => AddressMode::Immediate,
@@ -124,7 +124,7 @@ fn match_cc_10(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {
         (0b101, _)             => AddressMode::ZeroPageXIndexed,
         (0b111, Mnemonic::LDX) => AddressMode::AbsoluteYIndexed,
         (0b111, _)             => AddressMode::AbsoluteXIndexed,
-        _ => panic!("Unrecognised op code: {:#010x}", (aaa << 5) | (bbb << 2) | 0b10),
+        _ => panic!("Unrecognised op code: {:02x}", (aaa << 5) | (bbb << 2) | 0b10),
     };
     (mnemonic, address_mode)
 }
@@ -139,7 +139,6 @@ pub struct Instruction {
 
 impl Instruction {
     pub fn from_code(code: u8) -> Instruction {
-        println!("{:02x}", code);
         // Parse op codes according to this: http://www.llx.com/~nparker/a2/opcodes.html
         let (mnemonic, address_mode) = match code {
             0x00 => (Mnemonic::BRK, AddressMode::Implied),
@@ -190,7 +189,7 @@ impl Instruction {
                     0b01 => match_cc_01(aaa, bbb),
                     0b10 => match_cc_10(aaa, bbb),
                     0b00 => match_cc_00(aaa, bbb),
-                    _ => unreachable!(),
+                    _ => panic!("Unrecognised op code: {:02x}", code),
                 }
             },
         };

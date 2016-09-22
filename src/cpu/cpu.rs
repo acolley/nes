@@ -215,8 +215,12 @@ impl Cpu {
         addr
     }
 
+    /// Relative Addressing Mode
+    /// The operand 'offset' is interpreted
+    /// as a signed byte and added to the
+    /// current PC to give the final address.
     fn relative(&self, offset: u8) -> u16 {
-        let addr = ((self.reg.pc as i32) + offset as i32) as u16;
+        let addr = ((self.reg.pc as i32) + (offset as i8) as i32) as u16;
         // (addr, pages_differ(self.reg.pc, addr))
         addr
     }
