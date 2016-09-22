@@ -2,6 +2,7 @@ mod command;
 
 use std::io::{Write, stdin, stdout};
 
+use super::cpu::{AddressMode};
 use super::nes::Nes;
 use self::command::Command;
 
@@ -20,7 +21,23 @@ impl Debugger {
 
     fn print_instruction(&mut self) {
         let instruction = self.nes.current_instruction();
-        println!("{:#x} {:?}", self.nes.cpu().reg.pc, instruction);
+        let operand = match instruction.address_mode {
+            AddressMode::Accumulator | AddressMode::Implied => {
+                "".into()
+            },
+            AddressMode::Absolute => format!("${:04x}", self.nes.skip_peek_u16(1)),
+            AddressMode::AbsoluteXIndexed => format!("${:04x},X", self.nes.skip_peek_u16(1)),
+            AddressMode::AbsoluteYIndexed => format!("${:04x},Y", self.nes.skip_peek_u16(1)),
+            AddressMode::Immediate => format!("#${:02x}", self.nes.skip_peek(1)),
+            AddressMode::Relative => format!("${:02x}", self.nes.skip_peek(1)),
+            AddressMode::Indirect => format!("(${:04x})", self.nes.skip_peek_u16(1)),
+            AddressMode::XIndexedIndirect => format!("(${:02x},X)", self.nes.skip_peek(1)),
+            AddressMode::IndirectYIndexed => format!("(${:02x}),Y", self.nes.skip_peek(1)),
+            AddressMode::ZeroPage => format!("${:02x}", self.nes.skip_peek(1)),
+            AddressMode::ZeroPageXIndexed => format!("${:02x},X", self.nes.skip_peek(1)),
+            AddressMode::ZeroPageYIndexed => format!("${:02x},Y", self.nes.skip_peek(1)),
+        };
+        println!("{:04x} {:?} {}", self.nes.cpu().reg.pc, instruction, operand   );
     }
 
     pub fn run(&mut self) {

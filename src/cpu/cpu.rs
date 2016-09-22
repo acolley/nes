@@ -127,15 +127,45 @@ impl Cpu {
         self.flags = Flags::from_byte(0x24);
     }
 
+    /// Read the next byte of memory and advance
+    /// the PC Register by the same amount.
+    #[inline(always)]
     fn next(&mut self, mem: &mut Interconnect) -> u8 {
-        let x = mem.cpu_read(self.reg.pc);
+        let x = self.peek(mem);
         self.reg.pc += 1;
         x
     }
 
+    /// Read the next two bytes of memory and advance
+    /// the PC Register by the same amount.
+    #[inline(always)]
     fn next_u16(&mut self, mem: &mut Interconnect) -> u16 {
         let lo = self.next(mem);
         let hi = self.next(mem);
+        (lo as u16) | ((hi as u16) << 8)
+    }
+
+    /// Peek at the following byte of memory.
+    #[inline(always)]
+    pub fn peek(&self, mem: &mut Interconnect) -> u8 {
+        mem.cpu_read(self.reg.pc)
+    }
+
+    /// Peek at the following two bytes of memory.
+    #[inline(always)]
+    pub fn peek_u16(&self, mem: &mut Interconnect) -> u16 {
+        let lo = self.peek(mem);
+        let hi = self.skip_peek(1, mem);
+        (lo as u16) | ((hi as u16) << 8)
+    }
+
+    pub fn skip_peek(&self, skip: usize, mem: &mut Interconnect) -> u8 {
+        mem.cpu_read(self.reg.pc + skip as u16)
+    }
+
+    pub fn skip_peek_u16(&self, skip: usize, mem: &mut Interconnect) -> u16 {
+        let lo = self.skip_peek(skip, mem);
+        let hi = self.skip_peek(skip + 1, mem);
         (lo as u16) | ((hi as u16) << 8)
     }
 
@@ -283,8 +313,46 @@ impl Cpu {
     }
 
     fn get_address(&mut self, mem: &mut Interconnect, address_mode: AddressMode) -> u16 {
-        let (addr, _) = self.get_address_and_value(mem, address_mode);
-        addr.expect(format!("No address for mode: {:?}", address_mode).as_str())
+        match address_mode {
+            AddressMode::Absolute => {
+                self.absolute(mem)
+            },
+            AddressMode::AbsoluteXIndexed => {
+                let base = self.absolute(mem);
+                self.indexed_absolute_x(mem, base)
+            },
+            AddressMode::AbsoluteYIndexed => {
+                let base = self.absolute(mem);
+                self.indexed_absolute_y(mem, base)
+            },
+            AddressMode::Indirect => {
+                self.indirect(mem)
+            },
+            AddressMode::XIndexedIndirect => {
+                let base = self.next(mem);
+                self.x_indexed_indirect(mem, base)
+            },
+            AddressMode::IndirectYIndexed => {
+                let base = self.next(mem);
+                self.indirect_indexed(mem, base)
+            },
+            AddressMode::Relative => {
+                let offset = self.next(mem);
+                self.relative(offset)
+            },
+            AddressMode::ZeroPage => {
+                self.next(mem) as u16
+            },
+            AddressMode::ZeroPageXIndexed => {
+                let base = self.next(mem);
+                self.zero_page_indexed_x(mem, base)
+            },
+            AddressMode::ZeroPageYIndexed => {
+                let base = self.next(mem);
+                self.zero_page_indexed_y(mem, base)
+            },
+            _ => panic!("No address for mode: {:?}", address_mode),
+        }
     }
 
     fn get_address_value(&mut self, mem: &mut Interconnect, address_mode: AddressMode) -> u8 {

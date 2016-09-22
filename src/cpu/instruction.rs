@@ -139,6 +139,7 @@ pub struct Instruction {
 
 impl Instruction {
     pub fn from_code(code: u8) -> Instruction {
+        println!("{:02x}", code);
         // Parse op codes according to this: http://www.llx.com/~nparker/a2/opcodes.html
         let (mnemonic, address_mode) = match code {
             0x00 => (Mnemonic::BRK, AddressMode::Implied),
@@ -172,14 +173,14 @@ impl Instruction {
             0xea => (Mnemonic::NOP, AddressMode::Implied),
 
             // Conditional Instructions
-            0x10 => (Mnemonic::BPL, AddressMode::Implied),
-            0x30 => (Mnemonic::BMI, AddressMode::Implied),
-            0x50 => (Mnemonic::BVC, AddressMode::Implied),
-            0x70 => (Mnemonic::BVS, AddressMode::Implied),
-            0x90 => (Mnemonic::BCC, AddressMode::Implied),
-            0xb0 => (Mnemonic::BCS, AddressMode::Implied),
-            0xd0 => (Mnemonic::BNE, AddressMode::Implied),
-            0xf0 => (Mnemonic::BEQ, AddressMode::Implied),
+            0x10 => (Mnemonic::BPL, AddressMode::Relative),
+            0x30 => (Mnemonic::BMI, AddressMode::Relative),
+            0x50 => (Mnemonic::BVC, AddressMode::Relative),
+            0x70 => (Mnemonic::BVS, AddressMode::Relative),
+            0x90 => (Mnemonic::BCC, AddressMode::Relative),
+            0xb0 => (Mnemonic::BCS, AddressMode::Relative),
+            0xd0 => (Mnemonic::BNE, AddressMode::Relative),
+            0xf0 => (Mnemonic::BEQ, AddressMode::Relative),
 
             _ => {
                 let aaa = (code & 0b11100000) >> 5;

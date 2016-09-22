@@ -26,6 +26,22 @@ impl Nes {
         &mut self.interconnect
     }
 
+    pub fn peek(&mut self) -> u8 {
+        self.cpu.peek(&mut self.interconnect)
+    }
+
+    pub fn peek_u16(&mut self) -> u16 {
+        self.cpu.peek_u16(&mut self.interconnect)
+    }
+
+    pub fn skip_peek(&mut self, skip: usize) -> u8 {
+        self.cpu.skip_peek(skip, &mut self.interconnect)
+    }
+
+    pub fn skip_peek_u16(&mut self, skip: usize) -> u16 {
+        self.cpu.skip_peek_u16(skip, &mut self.interconnect)
+    }
+
     pub fn current_instruction(&mut self) -> Instruction {
         self.cpu.current_instruction(&mut self.interconnect)
     }
