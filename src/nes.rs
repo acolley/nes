@@ -1,9 +1,11 @@
 use cpu::{Cpu, Instruction};
 use interconnect::Interconnect;
+use ppu::Ppu;
 use rom::Cartridge;
 
 pub struct Nes {
     cpu: Cpu,
+    ppu: Ppu,
     interconnect: Interconnect,
 }
 
@@ -14,12 +16,17 @@ impl Nes {
         cpu.reset(&mut interconnect);
         Nes {
             cpu: cpu,
+            ppu: Ppu::new(),
             interconnect: interconnect,
         }
     }
 
     pub fn cpu(&self) -> &Cpu {
         &self.cpu
+    }
+
+    pub fn ppu(&self) -> &Ppu {
+        &self.ppu
     }
 
     pub fn interconnect(&mut self) -> &mut Interconnect {
@@ -47,7 +54,12 @@ impl Nes {
     }
 
     pub fn step(&mut self) {
-        self.cpu.step(&mut self.interconnect);
+        let cpu_cycles = self.cpu.step(&mut self.interconnect);
+
+        // PPU runs 3 cycles per CPU cycle so let it catch up
+        for _ in 0..cpu_cycles * 3 {
+            self.ppu.step(&mut self.interconnect);
+        }
     }
 
     pub fn run(&mut self) {

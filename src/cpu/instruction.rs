@@ -50,6 +50,7 @@ pub enum AddressMode {
 }
 
 // 151 Op Codes
+// Using the page at: http://www.llx.com/~nparker/a2/opcodes.html.
 
 #[inline(always)]
 fn match_cc_00(aaa: u8, bbb: u8) -> (Mnemonic, AddressMode) {

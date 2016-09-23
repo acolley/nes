@@ -1,7 +1,6 @@
 struct StatusFlags {
     vblank: bool,
     writes: bool,
-    nmi: bool,
 }
 
 impl Default for StatusFlags {
@@ -9,9 +8,58 @@ impl Default for StatusFlags {
         StatusFlags {
             vblank: false,
             writes: false,
-            nmi: true,
         }
     }
+}
+
+struct Control {
+    name_table_address: u16,
+    addr_inc: u16,
+    sprite_pattern_table: u16,
+    background_pattern_table: u16,
+    sprite_x: u16,
+    sprite_y: u16,
+    nmi: bool,
+}
+
+impl Control {
+    fn apply_control1(&mut self, x: u8) {
+        self.name_table_address = match x & 0b11 {
+            0 => 0x2000,
+            1 => 0x2400,
+            2 => 0x2800,
+            3 => 0x2c00,
+            _ => unreachable!(),
+        };
+        self.addr_inc = if (x & 0b100) == 0 { 1 } else { 32 };
+        self.sprite_pattern_table = if (x & 0b1000) == 0 { 0x0000 } else { 0x1000 };
+        self.background_pattern_table = if (x & 0b10000) == 0 { 0x0000 } else { 0x1000 };
+        self.sprite_y = if (x & 0b100000) == 0 { 8 } else { 16 };
+        self.nmi = x & 0b10000000 != 0;
+    }
+
+    fn apply_control2(&mut self, x: u8) {
+
+    }
+}
+
+impl Default for Control {
+    fn default() -> Self {
+        Control {
+            name_table_address: 0x2000,
+            addr_inc: 1,
+            sprite_pattern_table: 0x0000,
+            background_pattern_table: 0x0000,
+            sprite_x: 8,
+            sprite_y: 8,
+            nmi: false,
+        }
+    }
+}
+
+enum ColourMode {
+    Colour,
+    Monochrome,
 }
 
 /// This struct allows indirect communication
@@ -20,7 +68,7 @@ impl Default for StatusFlags {
 /// having a direct reference to the PPU struct.
 pub struct PpuInterface {
     mem: Vec<u8>,
-    addr_inc: u16,
+    control: Control,
     // The number of bytes that the address should
     // be incremented by when writing to 0x2007.
     flags: StatusFlags,
@@ -31,21 +79,10 @@ impl PpuInterface {
     pub fn new() -> PpuInterface {
         PpuInterface {
             mem: vec![0; 0x4000],
-            addr_inc: 1,
+            control: Default::default() ,
             flags: Default::default(),
             addr: 0,
         }
-    }
-
-    /// Write to the control1 register:
-    /// * PPU Address Increment = 1 if 2nd bit is 0 else 32
-    /// *
-    fn write_control1(&mut self, x: u8) {
-        self.addr_inc = if (x & 0b100) == 0 { 1 } else { 32 };
-    }
-
-    fn write_control2(&mut self, x: u8) {
-
     }
 
     #[inline(always)]
@@ -71,7 +108,7 @@ impl PpuInterface {
                 // read returns the requested data as it is
                 // buffered.
                 let x = self.read(self.addr);
-                self.addr += self.addr_inc;
+                self.addr += self.control.addr_inc;
                 x
             },
             _ => panic!("Invalid PPU register read address: {:#x}", addr),
@@ -87,8 +124,8 @@ impl PpuInterface {
         let addr = 0x2000 + (addr % 8);
 
         match addr {
-            0x2000 => self.write_control1(x),
-            0x2001 => self.write_control2(x),
+            0x2000 => self.control.apply_control1(x),
+            0x2001 => self.control.apply_control2(x),
             0x2002 => panic!("Trying to write to read-only PPU status register"),
             0x2006 => {
                 // Write the lower nibble of the PPU address
