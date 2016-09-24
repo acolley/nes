@@ -403,10 +403,10 @@ impl Cpu {
 //        println!("{:#x} {:?}", instruction.code, instruction.mnemonic);
         match instruction.mnemonic {
             Mnemonic::ADC => {
-                let a = self.reg.a;
-                let c = self.flags.c;
+                let a = self.reg.a as u16;
+                let c = self.flags.c as u16;
                 self.with_address_modify(mem, instruction.address_mode, |value| {
-                    let value = a as u16 + value as u16 + c as u16;
+                    let value = a + value as u16 + c;
                     (value as u8, Flags::from_value_nzcv(value))
                 });
             },

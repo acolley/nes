@@ -57,6 +57,10 @@ impl Nes {
         let cpu_cycles = self.cpu.step(&mut self.interconnect);
 
         // PPU runs 3 cycles per CPU cycle so let it catch up
+        // FIXME: this is very inaccurate, ideally we would
+        // emulate the CPU and PPU to the microcode level and
+        // synchronise them on a per-cycle basis instead of
+        // having the PPU catch up with the CPU.
         for _ in 0..cpu_cycles * 3 {
             self.ppu.step(&mut self.interconnect);
         }
