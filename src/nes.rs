@@ -54,7 +54,18 @@ impl Nes {
     }
 
     pub fn step(&mut self) {
-        let cpu_cycles = self.cpu.step(&mut self.interconnect);
+        // When the DMA register write occurs the interconnect
+        // automatically copies the 256 Sprite attribute data
+        // into SPR RAM on the PPU.
+        // At this point this function will have already been
+        // performed and we just need to simulate the 512 cycles
+        // that the CPU is stalled for.
+        let cpu_cycles = if self.interconnect.dma() {
+            self.interconnect.set_dma(false);
+            512
+        } else {
+            self.cpu.step(&mut self.interconnect)
+        };
 
         // PPU runs 3 cycles per CPU cycle so let it catch up
         // FIXME: this is very inaccurate, ideally we would

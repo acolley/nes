@@ -7,6 +7,7 @@ mod debug;
 mod interconnect;
 mod nes;
 mod ppu;
+mod region;
 mod rom;
 
 use std::fs::File;
